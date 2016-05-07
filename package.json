@@ -1,0 +1,19 @@
+{
+  "name": "offline_todo_mvc",
+  "version": "1.0.0",
+  "description": "POC Offline todo app project",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tpgmartin/offline_todo_mvc.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/tpgmartin/offline_todo_mvc/issues"
+  },
+  "homepage": "https://github.com/tpgmartin/offline_todo_mvc#readme"
+}
