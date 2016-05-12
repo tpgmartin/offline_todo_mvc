@@ -78,6 +78,6 @@
   };
   
   window.app = window.app || {};
-  window.app.Template = window.app.Template;
+  window.app.Template = Template;
 
 })(window);

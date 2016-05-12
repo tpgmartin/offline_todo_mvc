@@ -14,7 +14,7 @@
   }
   
   View.prototype._removeItem = function (id) {
-    var elem = qs('[data-id="]' + id '"]');
+    var elem = qs('[data-id="]' + id + '"]');
     
     if (elem) {
       this.$todoList.removeChild(elem);
@@ -191,6 +191,6 @@
 	};
   
   window.app = window.app || {};
-  window.app.View = window.app.View;
+  window.app.View = View;
   
 })(window);
