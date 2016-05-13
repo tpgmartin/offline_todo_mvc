@@ -17,4 +17,14 @@
 
   $on(window, 'load', setView);
   $on(window, 'hashchange', setView);
+  
+  // register service worker
+  if ('serviceWorker' in navigator) {
+    console.log('Service Workers are supported');
+    navigator.serviceWorker.register('./sw.js').then(function (res) {
+      console.log('response', res);
+    }).catch(function (err) {
+      console.log(err);
+    });
+  }
 })();
