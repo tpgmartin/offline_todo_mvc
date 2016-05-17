@@ -1,10 +1,55 @@
 (function (window) {
 	'use strict';
+	
+	function openDatabase() {
+	  // If the browser doesn't support service worker,
+	  // we don't care about having a database
+	  if (!navigator.serviceWorker) {
+	    return Promise.resolve();
+	  }
+
+	  var dbPromise = idb.open('todos-db', 1, function(upgradeDb) {
+	    var store = upgradeDb.createObjectStore('todos', {
+	      keyPath: 'id'
+	    });
+			store.createIndex('status', 'completed');
+	  });
+		
+		dbPromise.then(function(db) {
+		  var tx = db.transaction('todos', 'readwrite');
+		  var todosStore = tx.objectStore('todos');
+		
+		  todosStore.put({
+		    "title": "Take out trash",
+		    "completed": true,
+		    "id": 1463356992039
+		  });
+		
+		  todosStore.put({
+		    "title": "Pet cat",
+		    "completed": false,
+		    "id": 1463357050974
+		  });
+		
+		  todosStore.put({
+		    "title": "Take over world",
+		    "completed": false,
+		    "id": 1463357068790
+		  });
+		
+		  return tx.complete;
+		}).then(function() {
+		  console.log('Todos added');
+		});
+		
+		return dbPromise;
+	}
 
 	function Controller(model, view) {
 		var self = this;
 		self.model = model;
 		self.view = view;
+		self._dbPromise = openDatabase();
 
 		self.view.bind('newTodo', function (title) {
 			self.addItem(title);
@@ -47,23 +92,52 @@
 
 	Controller.prototype.showAll = function () {
 		var self = this;
-		self.model.read(function (data) {
-			self.view.render('showEntries', data);
-		});
+		
+		return self._dbPromise.then(function (db) {
+			
+			var index = db.transaction('todos')
+					.objectStore('todos');
+					
+			return index.getAll().then(function (data) {
+					self.view.render('showEntries', data);
+			});
+		});	
 	};
 
 	Controller.prototype.showActive = function () {
 		var self = this;
-		self.model.read({ completed: false }, function (data) {
-			self.view.render('showEntries', data);
-		});
+		
+		return self._dbPromise.then(function (db) {
+			
+			var index = db.transaction('todos')
+					.objectStore('todos');
+
+			return index.getAll().then(function (data) {
+					var active = data.filter(function (todo) {
+						return todo.completed === false;
+					});
+					self.view.render('showEntries', active);
+			});
+		});	
+
 	};
 
 	Controller.prototype.showCompleted = function () {
 		var self = this;
-		self.model.read({ completed: true }, function (data) {
-			self.view.render('showEntries', data);
-		});
+
+		return self._dbPromise.then(function (db) {
+			
+			var index = db.transaction('todos')
+					.objectStore('todos');
+
+			return index.getAll().then(function (data) {
+					var completed = data.filter(function (todo) {
+						return todo.completed === true;
+					});
+					self.view.render('showEntries', completed);
+			});
+		});	
+
 	};
 
 	Controller.prototype.addItem = function (title) {
