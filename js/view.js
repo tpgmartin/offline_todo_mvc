@@ -14,7 +14,7 @@
   }
   
   View.prototype._removeItem = function (id) {
-    var elem = qs('[data-id="]' + id + '"]');
+    var elem = qs('[data-id="' + id + '"]');
     
     if (elem) {
       this.$todoList.removeChild(elem);
@@ -33,6 +33,15 @@
   
   View.prototype._elementComplete = function (id, completed) {
     
+		var listItem = qs('[data-id="' + id + '"]');
+
+		if (!listItem) {
+			return;
+		}
+
+		listItem.className = completed ? 'completed' : '';
+
+		qs('input', listItem).checked = completed;
   };
   
   View.prototype._editItem = function (id, completed) {

@@ -147,17 +147,52 @@
 			return;
 		}
 
-		self.model.create(title, function () {
-			self.view.render('clearNewTodo');
-			self._filter(true);
+		return self._dbPromise.then(function (db) {
+	
+			var index = db.transaction('todos', 'readwrite')
+				.objectStore('todos');
+			
+			var newId = new Date().getTime();
+			var newTodo = {
+				'completed': false,
+				'id': newId,
+				'title': title
+			};
+			
+			var request = index.put(newTodo);
+
+			request.onsuccess = function(){
+				self.view.render('clearNewTodo');
+				self._filter(true);
+			};
+			request.onerror = function(e){
+					console.log('Error adding: '+e);
+			};
+
 		});
 	};
 
 	Controller.prototype.editItem = function (id) {
 		var self = this;
-		self.model.read(id, function (data) {
-			self.view.render('editItem', {id: id, title: data[0].title});
+		
+		return self._dbPromise.then(function (db) {
+	
+			var index = db.transaction('todos', 'readwrite')
+				.objectStore('todos');
+			var request = index.get(id);
+
+			request.onsuccess = function(data){
+				self.view.render('editItem', {id: id, title: data[0].title});
+			};
+			request.onerror = function(e){
+					console.log('Error getting: '+e);
+			};
+
 		});
+		// 
+		// self.model.read(id, function (data) {
+		// 	self.view.render('editItem', {id: id, title: data[0].title});
+		// });
 	};
 
 	Controller.prototype.editItemSave = function (id, title) {
@@ -182,47 +217,77 @@
 
 	Controller.prototype.removeItem = function (id) {
 		var self = this;
-		self.model.remove(id, function () {
-			self.view.render('removeItem', id);
-		});
+		
+		return self._dbPromise.then(function (db) {
+	
+			var index = db.transaction('todos', 'readwrite')
+				.objectStore('todos');
+			var request = index.delete(id);
+			
+			request.then(function () {
+				self.view.render('removeItem', id);
+			}).catch(function (err) { console.log (err) });
 
-		self._filter();
+		});
 	};
 
 	Controller.prototype.removeCompletedItems = function () {
 		var self = this;
-		self.model.read({ completed: true }, function (data) {
-			data.forEach(function (item) {
-				self.removeItem(item.id);
+		
+		return self._dbPromise.then(function (db) {
+	
+			var index = db.transaction('todos', 'readwrite')
+				.objectStore('todos');
+			
+			return index.getAll().then(function (data) {
+				data.forEach(function (todo) {
+					if (todo.completed) self.removeItem(todo.id);
+				});
 			});
+
 		});
 
-		self._filter();
 	};
 
 	Controller.prototype.toggleComplete = function (id, completed, silent) {
 		var self = this;
-		self.model.update(id, { completed: completed }, function () {
-			self.view.render('elementComplete', {
-				id: id,
-				completed: completed
+
+		// if (!silent) {
+		// 	self._filter();
+		// }
+		
+		return self._dbPromise.then(function (db) {
+	
+			var index = db.transaction('todos', 'readwrite')
+				.objectStore('todos');
+
+			index.get(id).then(function (todo) {
+				todo.completed = !todo.completed;
+				index.put(todo);
+				self.view.render('elementComplete', {
+					id: todo.id,
+					completed: todo.completed
+				});
 			});
 		});
-
-		if (!silent) {
-			self._filter();
-		}
+		
 	};
 
 	Controller.prototype.toggleAll = function (completed) {
 		var self = this;
-		self.model.read({ completed: !completed }, function (data) {
-			data.forEach(function (item) {
-				self.toggleComplete(item.id, completed, true);
+		
+		return self._dbPromise.then(function (db) {
+	
+			var index = db.transaction('todos', 'readwrite')
+				.objectStore('todos');
+			
+			return index.getAll().then(function (data) {
+				data.forEach(function (todo) {
+					if (todo.completed !== completed) self.toggleComplete(todo.id, completed, true);
+				});
 			});
-		});
 
-		self._filter();
+		});
 	};
 
 	Controller.prototype._updateCount = function () {
