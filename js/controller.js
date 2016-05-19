@@ -8,46 +8,46 @@
 	    return Promise.resolve();
 	  }
 
-	  var dbPromise = idb.open('todos-db', 1, function(upgradeDb) {
-	    var store = upgradeDb.createObjectStore('todos', {
-	      keyPath: 'id'
-	    });
-			store.createIndex('status', 'completed');
+	  var dbPromise = idb.open('todos-db', 2, function(upgradeDb) {
+			switch (upgradeDb.oldVersion) {
+				case 0:
+					upgradeDb.createObjectStore('todos', { keyPath: 'id' });
+				case 1:
+					var todosStore = upgradeDb.transaction.objectStore('todos');
+					todosStore.createIndex('status', 'completed');
+			}
 	  });
-		
+
 		dbPromise.then(function(db) {
 		  var tx = db.transaction('todos', 'readwrite');
 		  var todosStore = tx.objectStore('todos');
 		
 		  todosStore.put({
 		    "title": "Take out trash",
-		    "completed": true,
+		    "completed": 1,
 		    "id": 1463356992039
 		  });
 		
 		  todosStore.put({
 		    "title": "Pet cat",
-		    "completed": false,
+		    "completed": 0,
 		    "id": 1463357050974
 		  });
 		
 		  todosStore.put({
 		    "title": "Take over world",
-		    "completed": false,
+		    "completed": 0,
 		    "id": 1463357068790
 		  });
 		
 		  return tx.complete;
-		}).then(function() {
-		  console.log('Todos added');
-		});
+		})
 		
 		return dbPromise;
 	}
 
-	function Controller(model, view) {
+	function Controller(view) {
 		var self = this;
-		self.model = model;
 		self.view = view;
 		self._dbPromise = openDatabase();
 
@@ -160,14 +160,17 @@
 			};
 			
 			var request = index.put(newTodo);
+			
+			self.view.render('clearNewTodo');
+			self._filter(true);
 
-			request.onsuccess = function(){
-				self.view.render('clearNewTodo');
-				self._filter(true);
-			};
-			request.onerror = function(e){
-					console.log('Error adding: '+e);
-			};
+			// request.onsuccess = function(){
+			// 	self.view.render('clearNewTodo');
+			// 	self._filter(true);
+			// };
+			// request.onerror = function(e){
+			// 		console.log('Error adding: '+e);
+			// };
 
 		});
 	};
@@ -181,38 +184,49 @@
 				.objectStore('todos');
 			var request = index.get(id);
 
-			request.onsuccess = function(data){
-				self.view.render('editItem', {id: id, title: data[0].title});
-			};
-			request.onerror = function(e){
-					console.log('Error getting: '+e);
-			};
+			request.then(function(todo){
+				
+				console.log('..........');
+				console.log(todo);
+				
+				self.view.render('editItem', {id: id, title: todo.title});
+			});
 
 		});
-		// 
-		// self.model.read(id, function (data) {
-		// 	self.view.render('editItem', {id: id, title: data[0].title});
-		// });
+
 	};
 
 	Controller.prototype.editItemSave = function (id, title) {
 		var self = this;
+		
+		console.log('title');
+		console.log(title);
+		
 		title = title.trim();
+		
+		return self._dbPromise.then(function (db) {
+	
+			var index = db.transaction('todos', 'readwrite')
+				.objectStore('todos');
+				
+			if (title.length !== 0) {
+				return index.get(id).then(function (todo) {
+					console.log(todo);
+					self.view.render('editItemDone', {id: id, title: todo.title});
+				});
+			} else {
+				self.removeItem(id);
+			}
 
-		if (title.length !== 0) {
-			self.model.update(id, {title: title}, function () {
-				self.view.render('editItemDone', {id: id, title: title});
-			});
-		} else {
-			self.removeItem(id);
-		}
+		});
+
 	};
 
 	Controller.prototype.editItemCancel = function (id) {
 		var self = this;
-		self.model.read(id, function (data) {
-			self.view.render('editItemDone', {id: id, title: data[0].title});
-		});
+		// self.model.read(id, function (data) {
+		// 	self.view.render('editItemDone', {id: id, title: data[0].title});
+		// });
 	};
 
 	Controller.prototype.removeItem = function (id) {
@@ -292,16 +306,31 @@
 
 	Controller.prototype._updateCount = function () {
 		var self = this;
-		self.model.getCount(function (todos) {
-			self.view.render('updateElementCount', todos.active);
+		
+		return self._dbPromise.then(function (db) {
+	
+			var index = db.transaction('todos')
+				.objectStore('todos');
+				
+			return index.getAll();
+			
+		}).then(function(todos) {
+			var totalCount = todos.length;
+			var activeCount = todos.filter(function (todo) {
+				return todo.completed === 0;
+			}, 0).length;
+			var completedCount = todos.length - activeCount; 
+			
+			self.view.render('updateElementCount', activeCount);
 			self.view.render('clearCompletedButton', {
-				completed: todos.completed,
-				visible: todos.completed > 0
+				completed: completedCount,
+				visible: completedCount > 0
 			});
-
-			self.view.render('toggleAll', {checked: todos.completed === todos.total});
-			self.view.render('contentBlockVisibility', {visible: todos.total > 0});
+			
+			self.view.render('toggleAll', {checked: completedCount === totalCount});
+			self.view.render('contentBlockVisibility', {visible: totalCount > 0});
 		});
+
 	};
 
 	Controller.prototype._filter = function (force) {
