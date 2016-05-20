@@ -17,31 +17,6 @@
 					todosStore.createIndex('status', 'completed');
 			}
 	  });
-
-		dbPromise.then(function(db) {
-		  var tx = db.transaction('todos', 'readwrite');
-		  var todosStore = tx.objectStore('todos');
-		
-		  todosStore.put({
-		    "title": "Take out trash",
-		    "completed": 1,
-		    "id": 1463356992039
-		  });
-		
-		  todosStore.put({
-		    "title": "Pet cat",
-		    "completed": 0,
-		    "id": 1463357050974
-		  });
-		
-		  todosStore.put({
-		    "title": "Take over world",
-		    "completed": 0,
-		    "id": 1463357068790
-		  });
-		
-		  return tx.complete;
-		})
 		
 		return dbPromise;
 	}
@@ -266,9 +241,7 @@
 	Controller.prototype.toggleComplete = function (id, completed, silent) {
 		var self = this;
 
-		// if (!silent) {
-		// 	self._filter();
-		// }
+
 		
 		return self._dbPromise.then(function (db) {
 	
@@ -282,7 +255,9 @@
 					id: todo.id,
 					completed: todo.completed
 				});
+				self._filter();
 			});
+
 		});
 		
 	};
@@ -317,7 +292,7 @@
 		}).then(function(todos) {
 			var totalCount = todos.length;
 			var activeCount = todos.filter(function (todo) {
-				return todo.completed === 0;
+				return todo.completed === false;
 			}, 0).length;
 			var completedCount = todos.length - activeCount; 
 			
