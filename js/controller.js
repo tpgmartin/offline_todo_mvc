@@ -1,30 +1,10 @@
 (function (window) {
 	'use strict';
-	
-	function openDatabase() {
-	  // If the browser doesn't support service worker,
-	  // we don't care about having a database
-	  if (!navigator.serviceWorker) {
-	    return Promise.resolve();
-	  }
 
-	  var dbPromise = idb.open('todos-db', 2, function(upgradeDb) {
-			switch (upgradeDb.oldVersion) {
-				case 0:
-					upgradeDb.createObjectStore('todos', { keyPath: 'id' });
-				case 1:
-					var todosStore = upgradeDb.transaction.objectStore('todos');
-					todosStore.createIndex('status', 'completed');
-			}
-	  });
-		
-		return dbPromise;
-	}
-
-	function Controller(view) {
+	function Controller(store, view) {
 		var self = this;
 		self.view = view;
-		self._dbPromise = openDatabase();
+		self._dbPromise = store;
 
 		self.view.bind('newTodo', function (title) {
 			self.addItem(title);
@@ -135,17 +115,14 @@
 			};
 			
 			var request = index.put(newTodo);
-			
-			self.view.render('clearNewTodo');
-			self._filter(true);
 
-			// request.onsuccess = function(){
-			// 	self.view.render('clearNewTodo');
-			// 	self._filter(true);
-			// };
-			// request.onerror = function(e){
-			// 		console.log('Error adding: '+e);
-			// };
+			request.onsuccess = function(){
+				self.view.render('clearNewTodo');
+				self._filter(true);
+			};
+			request.onerror = function(e){
+					console.log('Error adding: '+e);
+			};
 
 		});
 	};
@@ -189,9 +166,11 @@
 					'title': title
 				};
 
-				self.view.render('editItemDone', {id: id, title: title});
 				index.put(updateTodo);
-			});
+				return updateTodo;
+			}).then(function (todo) {
+				self.view.render('editItemDone', {id: id, title: title});
+			}).catch(function (err) { console.log (err) });
 
 		});
 
