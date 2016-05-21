@@ -178,7 +178,6 @@
 	};
 
 	Controller.prototype._updateFilterState = function (currentPage) {
-
 		this._activeRoute = currentPage;
 
 		if (currentPage === '') {
