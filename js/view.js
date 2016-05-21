@@ -4,6 +4,9 @@
   function View (template) {
     this.template = template;
     
+    this.ENTER_KEY = 13;
+    this.ESCAPE_KEY = 27;
+
     this.$todoList = qs('.todo-list');
     this.$todoItemCounter = qs('.todo-count');
     this.$clearCompleted = qs('.clear-completed');
@@ -44,7 +47,7 @@
 		qs('input', listItem).checked = completed;
   };
   
-  View.prototype._editItem = function (id, completed) {
+  View.prototype._editItem = function (id, title) {
       var listItem = qs('[data-id="' + id + '"]');
       
       if (!listItem) {

@@ -160,10 +160,6 @@
 			var request = index.get(id);
 
 			request.then(function(todo){
-				
-				console.log('..........');
-				console.log(todo);
-				
 				self.view.render('editItem', {id: id, title: todo.title});
 			});
 
@@ -173,25 +169,29 @@
 
 	Controller.prototype.editItemSave = function (id, title) {
 		var self = this;
-		
-		console.log('title');
-		console.log(title);
-		
+
 		title = title.trim();
-		
+
 		return self._dbPromise.then(function (db) {
-	
+
 			var index = db.transaction('todos', 'readwrite')
 				.objectStore('todos');
-				
-			if (title.length !== 0) {
-				return index.get(id).then(function (todo) {
-					console.log(todo);
-					self.view.render('editItemDone', {id: id, title: todo.title});
-				});
-			} else {
+			var request = index.get(id);
+
+			if (title.length == 0) {
 				self.removeItem(id);
 			}
+
+			request.then(function (todo) {
+				var updateTodo = {
+					'completed': todo.completed,
+					'id': id,
+					'title': title
+				};
+
+				self.view.render('editItemDone', {id: id, title: title});
+				index.put(updateTodo);
+			});
 
 		});
 
@@ -199,9 +199,19 @@
 
 	Controller.prototype.editItemCancel = function (id) {
 		var self = this;
-		// self.model.read(id, function (data) {
-		// 	self.view.render('editItemDone', {id: id, title: data[0].title});
-		// });
+
+		return self._dbPromise.then(function (db) {
+
+			var index = db.transaction('todos', 'readwrite')
+				.objectStore('todos');
+			var request = index.get(id);
+
+			request.then(function (todo) {
+				self.view.render('editItemDone', {id: id, title: todo.title});
+			});
+
+		});
+
 	};
 
 	Controller.prototype.removeItem = function (id) {
