@@ -5,11 +5,12 @@ var filesToCache = [
                     '/js/app.js',
                     '/js/controller.js',
                     '/js/helpers.js',
-                    '/js/model.js',
-                    '/js/store.js',
+                    // '/js/model.js',
+                    // '/js/store.js',
                     '/js/template.js',
                     '/js/view.js',
                     '/js/lib/base.js',
+                    // '/js/lib/idb.js',
                     '/styles/base.css',
                     '/styles/index.css',
                   ];
@@ -17,7 +18,7 @@ var filesToCache = [
 self.addEventListener('install', function(event) {
   console.log('serviceWorker Install');
   // Remove skipWaiting after debugging
-  self.skipWaiting();
+  // self.skipWaiting();
   
   event.waitUntil(
       caches.open(staticCacheName).then(function (cache) {
