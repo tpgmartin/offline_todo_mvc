@@ -10,15 +10,12 @@ var filesToCache = [
                     '/js/template.js',
                     '/js/view.js',
                     '/js/lib/base.js',
-                    // '/js/lib/idb.js',
                     '/styles/base.css',
                     '/styles/index.css',
                   ];
 
 self.addEventListener('install', function(event) {
   console.log('serviceWorker Install');
-  // Remove skipWaiting after debugging
-  // self.skipWaiting();
   
   event.waitUntil(
       caches.open(staticCacheName).then(function (cache) {
@@ -42,7 +39,6 @@ self.addEventListener('activate', function(event) {
 });
 
 self.addEventListener('fetch', function(event) {
-  // Later add support for data requests if needed
   console.log('Fetch', event.request.url);
   
   event.respondWith(
